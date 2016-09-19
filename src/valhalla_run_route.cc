@@ -603,21 +603,11 @@ int main(int argc, char *argv[]) {
   auto t1 = std::chrono::high_resolution_clock::now();
   std::shared_ptr<DynamicCost> cost = mode_costing[static_cast<uint32_t>(mode)];
   std::unordered_map<size_t, size_t> color_counts;
-  connectivity_map_t connectivity_map(reader.GetTileHierarchy());
+
   std::vector<PathLocation> path_location;
   for (auto loc : locations) {
     try {
       path_location.push_back(Search(loc, reader, cost->GetEdgeFilter(), cost->GetNodeFilter()));
-      //TODO: get transit level for transit costing
-      //TODO: if transit send a non zero radius
-      auto colors = connectivity_map.get_colors(reader.GetTileHierarchy().levels().rbegin()->first, path_location.back(), 0);
-      for(auto color : colors){
-        auto itr = color_counts.find(color);
-        if(itr == color_counts.cend())
-          color_counts[color] = 1;
-        else
-          ++itr->second;
-      }
     } catch (...) {
       data.setSuccess("fail_invalid_origin");
       data.log();
@@ -626,6 +616,18 @@ int main(int argc, char *argv[]) {
   }
   // If we are testing connectivity
   if (connectivity) {
+    //TODO: get transit level for transit costing
+    //TODO: if transit send a non zero radius
+    connectivity_map_t connectivity_map(reader.GetTileHierarchy());
+    auto colors = connectivity_map.get_colors(reader.GetTileHierarchy().levels().rbegin()->first, path_location.back(), 0);
+    for(auto color : colors){
+      auto itr = color_counts.find(color);
+      if(itr == color_counts.cend())
+        color_counts[color] = 1;
+      else
+        ++itr->second;
+    }
+
     //are all the locations in the same color regions
     bool connected = false;
     for(const auto& c : color_counts) {
